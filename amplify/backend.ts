@@ -89,7 +89,13 @@ const httpApi = new HttpApi(apiStack, 'TodoApi', {
       CorsHttpMethod.DELETE,
       CorsHttpMethod.OPTIONS,
     ],
-    allowHeaders: ['*'],
+    allowHeaders: [
+      'Content-Type',
+      'X-Amz-Date',
+      'Authorization',
+      'X-Amz-Security-Token',
+      'X-App-Name'
+    ],
     allowCredentials: true,
   },
 });

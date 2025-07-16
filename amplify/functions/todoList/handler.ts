@@ -11,7 +11,7 @@ const corsHeaders = (origin?: string) => {
   const allowOrigin = origin || "*";
   return {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Amz-Security-Token,X-App-Name",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Credentials": "true",
     "Content-Type": "application/json",
@@ -30,6 +30,30 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         body: JSON.stringify({ message: 'OK' })
       };
     }
+    
+    // 呼び出し元アプリ名をヘッダーから取得
+    const appName = event.headers?.['x-app-name'];
+    if (!appName) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders(event.headers?.origin),
+        body: JSON.stringify({ message: '呼び出し元アプリ名（X-App-Name）ヘッダーが必要です' })
+      };
+    }
+    
+    // Cognitoユーザー情報からSubを取得
+    // API Gateway V2の認証情報はカスタム構造のため、型アサーションを使用
+    const authContext = event.requestContext as any;
+    const userSub = authContext.authorizer?.jwt?.claims?.sub;
+    if (!userSub) {
+      return {
+        statusCode: 401,
+        headers: corsHeaders(event.headers?.origin),
+        body: JSON.stringify({ message: '認証情報が不足しています' })
+      };
+    }
+    
+    console.log(`リクエスト情報: アプリ名=${appName}, ユーザーSub=${userSub}`);
     
     // Amplify Data クライアントの設定を取得
     const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
@@ -58,7 +82,13 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     return {
       statusCode: 200,
       headers: corsHeaders(event.headers?.origin),
-      body: JSON.stringify({ todos })
+      body: JSON.stringify({ 
+        todos,
+        requestInfo: {
+          appName,
+          userSub
+        }
+      })
     };
   } catch (error) {
     console.error('Error:', error);
