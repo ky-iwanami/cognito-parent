@@ -45,12 +45,14 @@ const TARGET_DOMAIN = process.env.TARGET_DOMAIN?.split(',') || [];
 // redirectSignIn設定
 cfnUserPoolClient.callbackUrLs = [
   'http://localhost:5173/',
+  'http://localhost:5174/',
   ...TARGET_DOMAIN,
 ];
 
 // redirectSignOut設定
 cfnUserPoolClient.logoutUrLs = [
   'http://localhost:5173/',
+  'http://localhost:5174/',
   ...TARGET_DOMAIN,
 ];
 
@@ -79,6 +81,23 @@ const todoListIntegration = new HttpLambdaIntegration(
 // HTTP APIを作成
 const httpApi = new HttpApi(apiStack, 'TodoApi', {
   apiName: 'todoApi',
+  // CORS設定を追加
+  corsPreflight: {
+    allowOrigins: [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      ...TARGET_DOMAIN,
+    ],
+    allowMethods: [
+      CorsHttpMethod.GET,
+      CorsHttpMethod.POST,
+      CorsHttpMethod.PUT,
+      CorsHttpMethod.DELETE,
+      CorsHttpMethod.OPTIONS,
+    ],
+    allowHeaders: ['*'],
+    allowCredentials: true,
+  },
 });
 
 // Todo一覧を取得するルートを追加
