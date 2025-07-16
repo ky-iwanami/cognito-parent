@@ -39,22 +39,21 @@ cfnUserPoolClient.allowedOAuthScopes = [
   'aws.cognito.signin.user.admin'
 ];
 
-// 環境変数に設定された子アプリのドメインを取得
+// 環境変数に設定された子アプリのドメイン（末尾のスラッシュなし）
 const TARGET_DOMAIN = process.env.TARGET_DOMAIN?.split(',') || [];
 
-// redirectSignIn設定
-cfnUserPoolClient.callbackUrLs = [
-  'http://localhost:5173/',
-  'http://localhost:5174/',
-  ...TARGET_DOMAIN,
+// ローカル開発環境のドメイン（末尾のスラッシュなし）
+const localDomains = [
+  'http://localhost:5173',
+  'http://localhost:5174'
 ];
 
-// redirectSignOut設定
-cfnUserPoolClient.logoutUrLs = [
-  'http://localhost:5173/',
-  'http://localhost:5174/',
-  ...TARGET_DOMAIN,
-];
+// 全てのドメイン（末尾のスラッシュなし）
+const allDomains = [...localDomains, ...TARGET_DOMAIN];
+
+// Cognito設定 - 末尾にスラッシュを追加
+cfnUserPoolClient.callbackUrLs = allDomains.map(domain => `${domain}/`);
+cfnUserPoolClient.logoutUrLs = allDomains.map(domain => `${domain}/`);
 
 // responseType設定（認可コードフロー）
 cfnUserPoolClient.allowedOAuthFlows = ['code'];
@@ -81,13 +80,8 @@ const todoListIntegration = new HttpLambdaIntegration(
 // HTTP APIを作成
 const httpApi = new HttpApi(apiStack, 'TodoApi', {
   apiName: 'todoApi',
-  // CORS設定を追加
   corsPreflight: {
-    allowOrigins: [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      ...TARGET_DOMAIN,
-    ],
+    allowOrigins: allDomains,
     allowMethods: [
       CorsHttpMethod.GET,
       CorsHttpMethod.POST,
