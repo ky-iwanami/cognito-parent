@@ -12,10 +12,16 @@ const schema = a.schema({
     .model({
       content: a.string(),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.authenticated()]),
+  Task: a
+    .model({
+      content: a.string(),
+    })
+    .authorization((allow) => [allow.authenticated()]),
 })
 .authorization(allow => [
-  allow.resource(todoListFunction).to(['query'])
+  allow.resource(todoListFunction).to(['query']),
+  allow.authenticated()
 ]);
 
 export type Schema = ClientSchema<typeof schema>;
@@ -23,11 +29,7 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
-    // API Key is used for a.allow.public() rules
-    apiKeyAuthorizationMode: {
-      expiresInDays: 30,
-    },
+    defaultAuthorizationMode: "userPool"
   },
 });
 
